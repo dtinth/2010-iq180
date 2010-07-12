@@ -1,0 +1,466 @@
+<html>
+	<head>
+		<title>Timer</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script type="text/javascript" src="lib/air/AIRAliases.js"></script>
+		<script type="text/javascript" src="dtjs2.js"></script>
+		<style type="text/css">
+			@import "style.css";
+		</style>
+	</head>
+	<body>
+		
+		<div class="screen screen-wide">
+			<div class="menu">
+				<ul class="tabs">
+					<li id="tab_index"     class="active-tab">หน้าแรก</li>
+					<li id="tab_clock"     class="tab">นาฬิกา</li>					<li id="tab_stopwatch" class="tab">จับเวลา</li>					<li id="tab_timer"     class="tab">นับถอยหลัง</li>				</ul>
+				<div id="body_clock" style="display: none">
+					<div id="datetime">00/00/0000</div>
+				</div>
+				<div id="body_stopwatch" style="display: none">
+					<div class="task">
+						&laquo;
+						<span id="sw_reset">Reset</span>
+						&raquo;
+					</div>
+					<div id="sw_ssb"></div>
+				</div>
+				<div id="body_timer" style="display: none">
+					<div class="task">
+						&laquo;
+						<span id="tm_reset">Reset</span>
+						::
+						<span id="tm_30">30s</span>
+						<span id="tm_45">45s</span>
+						::
+						<span id="tm_120">2m</span>
+						<span id="tm_180">3m</span>
+						::
+						<span id="tm_3600">60m</span>
+						<span id="tm_7200">120m</span>
+						&raquo;
+					</div>
+					<div id="tm_ssb"></div>
+				</div>
+				<div id="logo">
+				</div>
+			</div>
+			<div class="content">
+				<div id="lcd"></div>
+			</div>
+			<div class="cimg" id="cimg">
+				<img src="splash/splash-timer.png" alt="" />
+				<div class="other">
+					<a href="24Game.html">&laquo; 24-Game</a><b> | </b><a href="IQ180.html">IQ-180 &raquo;</a>
+				</div>
+			</div>
+			<div id="about"></div>
+		</div>
+		
+		<script src="splash-image.js" type="text/javascript"></script>
+		<script src="utility-classes.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			
+			var Timer = function() {
+				
+				var lcd;
+				var digits = [];
+				var separators = [];
+				var lcdToggle;
+				var tabs = {
+					'index': {
+						'activate':   function() {
+							cTOGGLE (1);
+							lcdToggle (0);
+							for (var i = 0; i < digits.length; i ++)
+								digits[i].setNumber (10);
+						},
+						'deactivate': function() {
+							cTOGGLE (0);
+							lcdToggle (1);
+						}
+					},
+					'clock': {
+						'activate':   function() {
+							setDate ();
+							$('body_clock').style.display = 'block';
+						},
+						'deactivate': function() {
+							$('body_clock').style.display = 'none';
+						}
+					},
+					'stopwatch': {
+						'activate':   function() {
+							$('body_stopwatch').style.display = 'block';
+						},
+						'deactivate': function() {
+							$('body_stopwatch').style.display = 'none';
+						}
+					},
+					'timer': {
+						'activate':   function() {
+							$('body_timer').style.display = 'block';
+							window.onmousedown = Countdown.mouseDown;
+						},
+						'deactivate': function() {
+							$('body_timer').style.display = 'none';
+							window.onmousedown = emptyFn;
+						}
+					}
+				};
+				
+				function createStartStopButton(con, onstart, onstop) {
+					var art = document.createElement('span');
+					var op  = document.createElement('span');
+					art.className = 'ssbutton';
+					op.className = 'ssbutton';
+					var mode = 0;
+					art.onmousedown = function() {
+						switchMode (1);
+					};
+					op.onmousedown = function() {
+						switchMode (0);
+					};
+					renderMode (0);
+					con.appendChild (art);
+					con.appendChild (op);
+					function switchMode(md) {
+						if (mode != md) {
+							renderMode (md);
+							if (md)
+								onstart ();
+							else
+								onstop ();
+							mode = md;
+						}
+					}
+					function renderMode(md) {
+						art.style.backgroundPosition = '0 '      + (!md ? '-64px' : '0');
+						op.style.backgroundPosition  = '-203px ' + (md  ? '-64px' : '0');
+					}
+					return switchMode;
+				}
+				
+				
+				var selected = 'index';
+				function initTabs() {
+					for (var i in tabs) {
+						initTab (tabs[i], i);
+					}
+				}
+				
+				function initTab(config, name) {
+					$('tab_' + name).onmousedown = function() {
+						switchTab (name);
+					};
+				}
+				
+				function switchTab(name) {
+					if (name != selected) {
+						for (var i = 0; i < digits.length; i ++)
+							digits[i].animate (i);
+						$('tab_' + selected).className = 'tab';
+						$('tab_' + name).className = 'active-tab';
+						tabs[selected].deactivate ();
+						tabs[name].activate ();
+						selected = name;
+					}
+				}
+				
+				var swSSB;
+				var Stopwatch = function() {
+					
+					var lastTime = 0;
+					var started = 0;
+					var running = 0;
+					
+					function getValue() {
+						var sec = getTime() / 1000;
+						return [
+							Math.floor(sec / 3600),
+							Math.floor(sec / 60) % 60,
+							Math.floor(sec) % 60,
+							(sec + 0.99) % 1
+						];
+					}
+					
+					function getTime() {
+						return lastTime + (running ? new Date().getTime() - started : 0);
+					}
+					
+					function start() {
+						if (running) return;
+						lastTime = getTime();
+						started = new Date().getTime();
+						running = 1;
+					}
+					
+					function stop() {
+						if (!running) return;
+						lastTime = getTime();
+						running = 0;
+					}
+					
+					function reset() {
+						lastTime = 0;
+						running = 0;
+						swSSB (0);
+					}
+					
+					return { start: start, stop: stop, reset: reset, getValue: getValue };
+					
+				}();
+				
+				var Countdown = function() {
+					
+					var lastTime = 0;
+					var started = 0;
+					var running = 0;
+					var tmSSB;
+					var timedOut = 0;
+					
+					var past10 = 0;
+					var sound;
+					var playing;
+					if (window.air && air.Sound) {
+						var uReq = new air.URLRequest('countdown.mp3');
+						sound = new air.Sound();
+						sound.load (uReq);
+					}
+					
+					function init() {
+						tmSSB = createStartStopButton($('tm_ssb'), start, stop);
+					}
+					
+					function getValue() {
+						var sec = getTime() / 1000;
+						if (sec == 0 && running) {
+							timedOut = 1;
+							tmSSB(0);
+						}
+						return [
+							Math.floor(sec / 3600),
+							Math.floor(sec / 60) % 60,
+							Math.floor(sec) % 60,
+							(sec + 0.99) % 1
+						];
+					}
+					
+					function getTime() {
+						var ltm = lastTime - (running ? new Date().getTime() - started : 0);
+						if (ltm > 10200) past10 = 0;
+						if (ltm <= 10100 && running && lastTime > 10000 && !past10) {
+							past10 = 1;
+							if (sound) {
+								playing = sound.play();
+							}
+						}
+						return Math.max(0, ltm);
+					}
+					
+					function setTime(tm) {
+						lastTime = Math.min(359999000, Math.max(0, tm));
+						started = new Date().getTime();
+					}
+					
+					function start() {
+						if (running) return;
+						lastTime = getTime();
+						started = new Date().getTime();
+						running = 1;
+					}
+					
+					function stop() {
+						if (!running) return;
+						if (playing && !timedOut) playing.stop();
+						if (timedOut) {
+							for (var i = 0; i < 6; i ++) digits[i].animate (0);
+						}
+						timedOut = 0;
+						lastTime = getTime();
+						running = 0;
+					}
+					
+					function reset() {
+						lastTime = 0;
+						running = 0;
+						tmSSB (0);
+					}
+					
+					var signi = [36000, 3600, 600, 60, 10, 1];
+					function addToTime(i, dir) {
+						if (dir == 0) return;
+						tmSSB (0);
+						setTime (1000 * (Math.floor(getTime() / 1000) + dir * signi[i]));
+					}
+					
+					$('tm_reset').onmousedown = function() { stopAndSet (0); };
+					$('tm_30').onmousedown = function() { stopAndSet (30); };
+					$('tm_45').onmousedown = function() { stopAndSet (45); };
+					$('tm_120').onmousedown = function() { stopAndSet (120); };
+					$('tm_180').onmousedown = function() { stopAndSet (180); };
+					$('tm_3600').onmousedown = function() { stopAndSet (3600); };
+					$('tm_7200').onmousedown = function() { stopAndSet (7200); };
+					
+					function stopAndSet(t) { tmSSB(0); setTime(t * 1000); }
+					
+					function mouseDown(e) {
+						var my = e.clientY;
+						var mx = e.clientX;
+						if (my > 530) return;
+						for (var i = 0; i < 6; i ++) {
+							var lb = dtjs2.l(digits[i].lcd.el);
+							var rb = lb + (digits[i].lcd.el.offsetWidth);
+							if (mx > lb && mx < rb) {
+								var it = dtjs2.t(digits[i].lcd.el);
+								var ih = digits[i].lcd.el.offsetHeight;
+								var dir = my > it + ih * 0.6 ? -1 : (my < it + ih * 0.4 ? 1 : 0);
+								if (my < it - 50 || my > it + ih + 50) dir = 0;
+								addToTime (i, dir);
+								e.preventDefault ();
+								e.stopPropagation ();
+								break;
+							}
+						}
+					}
+					
+					return { init: init, mouseDown: mouseDown, start: start, stop: stop, reset: reset, getValue: getValue };
+					
+				}();
+				
+				function setDate() {
+					var d = new Date();
+					$('datetime').innerHTML =
+						d.getDate() + '/' + (1 + d.getMonth()) + '/' + (543 + d.getFullYear());
+				}
+				
+				function animate() {
+					if (selected == 'clock') {
+						/**
+						 * @type Date
+						 */
+						var d = new Date();
+						var t = [
+							d.getHours(), d.getMinutes(), d.getSeconds(),
+							d.getMilliseconds() / 1000
+						];
+						setDate ();
+						display (t);
+					} else if (selected == 'stopwatch') {
+						display (Stopwatch.getValue());
+					} else if (selected == 'timer') {
+						display (Countdown.getValue());
+					}
+					return true;
+				}
+				
+				function display(t) {
+					digits[0].setNumber (getDigit(t[0], 1));
+					digits[1].setNumber (getDigit(t[0], 0));
+					digits[2].setNumber (getDigit(t[1], 1));
+					digits[3].setNumber (getDigit(t[1], 0));
+					digits[4].setNumber (getDigit(t[2], 1));
+					digits[5].setNumber (getDigit(t[2], 0));
+					var so = Math.sqrt(t[3]);
+					separators[0].element.style.opacity = so;
+					separators[1].element.style.opacity = so;
+				}
+				
+				var animationData = [
+					'aaaaaaa', '00aaaaa', '00000aa', '1100000', '1111100',
+					'1111111', '0011111', '0000011', 'bb00000',
+					'bbbbb00', 'bbbbbbb'
+				];
+				
+				function SimpleLCD(className) {
+					this.lcd = new LCDDigit(lcd, className);
+					this.lcd.setLights (LCDDigit.number[10]);
+					this.lcd.toggler (1);
+					this.lights = this.lcd.lightData.slice();
+					this.anim = 0;
+					this.frame = 7;
+					this.snap = [0, 0, 0, 0, 0, 0, 0];
+				}
+				
+				SimpleLCD.prototype.setNumber = function(n) {
+					this.lights = LCDDigit.number[n].slice();
+					this.render ();
+				};
+				
+				SimpleLCD.prototype.render = function() {
+					var newLight;
+					if (this.frame == 10) {
+						newLight = this.lights;
+					} else {
+						var newLight = [];
+						var currentFrame = animationData[this.frame];
+						for (var i = 0; i < currentFrame.length; i++) {
+							var c = currentFrame.charAt(i);
+							if (c == '0')
+								newLight.push (0);
+							else if (c == '1')
+								newLight.push (1);
+							else if (c == 'a')
+								newLight.push (this.snap[i]);
+							else if (c == 'b')
+								newLight.push (this.lights[i]);
+						}
+					}
+					this.lcd.setLights (newLight);
+				};
+				
+				SimpleLCD.prototype.animate = function(d) {
+					if (this.anim) this.anim();
+					this.snap = this.lcd.lightData.slice();
+					var th = this;
+					this.anim = dtjs2.a.c(0, 10, 0.3, function(v) {
+						var c = Math.floor(v);
+						if (c != th.frame) {
+							th.frame = c;
+							th.render ();
+						}
+					}).delay(d * 0.1);
+				};
+				
+				function Separator(className) {
+					var img = document.createElement('img');
+					img.src = 'colon.png';
+					img.className = className;
+					lcd.appendChild (img);
+					img.style.opacity = '1';
+					this.element = img;
+				}
+				
+				function init() {
+					initTabs ();
+					lcd = $('lcd');
+					lcdToggle = dtjs2.a.t(1.3, function(c) {
+						lcd.style.opacity = (Math.max(0, c * 1.3 - 0.3));
+					});
+					digits.push (new SimpleLCD('d-hours'));
+					digits.push (new SimpleLCD('d-hours'));
+					separators.push (new Separator('s-hours'));
+					digits.push (new SimpleLCD('d-mins'));
+					digits.push (new SimpleLCD('d-mins'));
+					separators.push (new Separator('s-mins'));
+					digits.push (new SimpleLCD('d-secs'));
+					digits.push (new SimpleLCD('d-secs'));
+					dtjs2.a.m.add (animate);
+					$('sw_reset').onmousedown = Stopwatch.reset;
+					swSSB = createStartStopButton($('sw_ssb'), Stopwatch.start, Stopwatch.stop);
+					Countdown.init ();
+				}
+				
+				return {init: init};
+				
+			}();
+			
+			window.onload = function() {
+				Timer.init ();
+			};
+			
+		</script>
+		
+	</body>
+</html>

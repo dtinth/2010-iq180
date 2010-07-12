@@ -1,0 +1,291 @@
+<html>
+	<head>
+		<title>24 Game</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script type="text/javascript" src="lib/air/AIRAliases.js"></script>
+		<script type="text/javascript" src="dtjs2.js"></script>
+		<style type="text/css">
+			@import "style.css";
+		</style>
+	</head>
+	<body>
+		
+		<div class="screen">
+			<div class="menu">
+				<div id="logo">
+				</div>
+				
+				<h1>โจทย์</h1>
+				<button class="full-width" id="random_question">สุ่มคำถาม</button>
+				
+				<div id="after_active">
+					<h1>จับเวลา</h1>
+					<span id="timer_a">
+						<button class="full-width" id="timer_stop">หยุดการจับเวลา</button>
+					</span>
+					<span id="timer_b">
+						<button class="half-width" id="timer_start1">30 วินาที</button><button class="half-width" id="timer_start2">45 วินาที</button>
+					</span>
+					
+					
+					<h1>คำตอบ</h1>
+					<button class="full-width" id="show_solution"></button>
+				
+				
+					<h1>รีเซ็ต</h1>
+					<button class="full-width" id="reset_all">เริ่มใหม่</button>
+				</div>
+			</div>
+			<div class="content">
+				<div id="cQuestion"></div>
+			</div>
+			<div id="popupu" class="popupu"></div>
+			<div class="cimg" id="cimg">
+				<img src="splash/splash-24.png" alt="" />
+				<div class="other">
+					<a href="IQ180.html">&laquo; IQ-180</a><b> | </b><a href="Timer.html">Timer &raquo;</a>
+				</div>
+			</div>
+			<div id="about"></div>
+		</div>
+		
+		<script src="24db.js" type="text/javascript"></script>
+		<script src="splash-image.js" type="text/javascript"></script>
+		<script src="utility-classes.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			
+			The24Game = function() {
+				
+				var CENTER_X = 612;
+				var CENTER_Y = 384;
+				var start;
+
+				function BigNumber(con, pos) {
+					this.render ();
+					this.positionAt (pos);
+					this.container = con;
+					this.initAnimation();
+					this.jump = 0;
+					this.jumpSpeed = 0;
+					con.appendChild (this.el);
+				}
+				BigNumber.prototype = {
+					render: function() {
+						var el = document.createElement('div');
+						el.className = 'big-number';
+						this.el = el;
+					},
+					initAnimation: function() {
+						var that = this;
+						dtjs2.a.m.add(function() {
+							that.doJump();
+							return true;
+						});
+					},
+					doJump: function() {
+						this.el.style.WebkitTransform = 'translate(0, ' + Math.round(-this.jump) + 'px)';
+						this.el.style.opacity = 1 / Math.max(1, this.jump / 12);
+						this.jump *= this.jumpSpeed;
+					},
+					position: function(x, y) {
+						var nX = (CENTER_X + x - 75);
+						var nY = (CENTER_Y + y - 135);
+						this.el.style.left = nX + 'px';
+						this.el.style.top  = nY + 'px';
+					},
+					positionAt: function(i) {
+						this.position((i - 3 / 2) * 180, 0);
+					},
+					setNumber: function(n) {
+						this.number = n;
+						this.el.style.backgroundPosition = (n * -150) + 'px 0';
+						this.jump = Math.max(this.jump, 40 + Math.random() * 20);
+						this.jumpSpeed = 0.65 + Math.random() * 0.1;
+						this.doJump();
+					},
+					getNumber: function() {
+						return this.number;
+					}
+				};
+
+				var Numbers = {
+					numbers: [],
+					init: function() {
+						var that = this;
+						this.container = $('cQuestion');
+						for (var i = 0; i < 4; i ++) {
+							this.numbers.push (new BigNumber(this.container, i));
+						}
+						this.fade = dtjs2.a.t(0.4, function(v) {
+							var w = dtjs2.ease.io(v);
+							that.container.style.opacity = v;
+						});
+					}
+				}				
+
+				var Randomizer = {
+					interval: 0,
+					db: [],
+					currentQuestion: null,
+					init: function() {
+						this.generateDB();
+					},
+					generateDB: function() {
+						for (var i in The24GameDB) {
+							this.db.push ({
+								question: i,
+								solutions: The24GameDB[i],
+							});
+						}
+					},
+					start: function() {
+						var that = this;
+						that.randomize();
+						this.interval = setInterval(function() {
+							that.randomize();
+						}, 160);
+					},
+					stop: function() {
+						clearInterval(this.interval);
+					},
+					getSolutions: function() {
+						if (!this.currentQuestion)
+							return [];
+						return this.currentQuestion.solutions;
+					},
+					randomize: function() {
+						var num = Math.min(this.db.length - 1, Math.floor(Math.random() * this.db.length));
+						var question = this.db[num];
+						var nums = [];
+						this.currentQuestion = question;
+						function swap(i, j) {
+							if (i != j) {
+								var tmp = nums[i];
+								nums[i] = nums[j];
+								nums[j] = tmp;
+							}
+						}
+						for (var i = 0; i < 4; i ++) {
+							nums.push (parseInt(question.question.charAt(i), 10));
+						}
+						for (var i = 0; i < 4; i ++) {
+							var j = Math.min(3, Math.floor(Math.random() * 4));
+							swap (i, j);
+						}
+						for (var i = 0; i < 4; i ++) {
+							Numbers.numbers[i].setNumber (nums[i]);
+						}
+					}
+				};
+
+				var Solution = {
+
+					el: undefined,
+					mode: 0,
+					tmr: 0,
+
+					init: function() {
+						$('show_solution').innerHTML = 'แสดงเฉลย';
+						this.el = $('popupu');
+						var that = this;
+						this.fade = dtjs2.a.t(0.4, function(v) {
+							var w = dtjs2.ease.io(v);
+							that.el.style.opacity = v;
+						});
+					},
+					show: function(q) {
+						var that = this;
+						this.el.innerHTML = q;
+						$('show_solution').innerHTML = 'ซ่อนเฉลย';
+						setTimeout (function() {
+							that.el.style.top = CENTER_Y + (that.el.offsetHeight / -2) + 'px';
+							that.el.style.left = CENTER_X + (that.el.offsetWidth / -2) + 'px';
+						}, 1);
+						this.mode = 1;
+						this.fade (1);
+					},
+					hide: function() {
+						$('show_solution').innerHTML = 'แสดงเฉลย';
+						clearTimeout (this.tmr);
+						this.mode = 0;
+						this.fade (0);
+					},
+					isShowing: function() {
+						return !!this.mode;
+					}
+					
+				};
+
+				var Timer = {
+					init: function() {
+						this.canvas = document.createElement('canvas');
+						this.canvas.width = 600;
+						this.canvas.height = 100;
+					},
+					start: function() {
+					},
+					stop: function() {
+					}
+				};
+
+				function init() {
+
+					Numbers.init();
+					Randomizer.init();
+					Solution.init();
+					Timer.init();
+					
+					$('after_active').style.display = 'none';
+					$('random_question').onmousedown = function() {
+						Randomizer.start ();
+						Numbers.fade (1);
+						Solution.hide ();
+						//Timer.stop ();
+						window.onmouseup = function() {
+							Randomizer.stop ();
+							window.onmouseup = emptyFn;
+						};
+						$('after_active').style.display = '';
+						cTOGGLE (0);
+					};
+					$('show_solution').onmousedown = function() {
+						Solution.isShowing() ? Solution.hide() : Timer.stop () + Solution.show(Randomizer.getSolutions().join('<br />').replace(/([+\-x*\/])/g, ' $1 ').replace(/x/g, '&times;').replace(/\//g, '&divide;'));
+					};
+					aText = $('popupu');
+					function resetAll() {
+						Numbers.fade (0);
+						Solution.hide ();
+						Timer.stop ();
+						cTOGGLE (1);
+						$('after_active').style.display = 'none';
+					}
+					$('reset_all').onmousedown = function() {
+						resetAll ();
+					};
+					var lkp = 0;
+					window.onkeyup = function(e) {
+						if (e.keyCode == 32) {
+							if (new Date().getTime() - lkp < 300) {
+								lkp = 0;
+								resetAll ();
+							} else {
+								lkp = new Date().getTime();
+							}
+						}
+					};
+				}
+				
+				return {
+					init: init
+				}
+				
+			}();
+			
+			window.onload = function() {
+				The24Game.init ();
+			};
+			
+		</script>
+		
+	</body>
+</html>

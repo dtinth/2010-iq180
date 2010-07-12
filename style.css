@@ -1,0 +1,313 @@
+body {
+	background: #000;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	overflow: hidden;
+	cursor: default;
+}
+
+.screen {
+	background: #333;
+	width: 1024px;
+	height: 768px;
+	margin: 0 auto;
+	position: relative;
+	overflow: hidden;
+}
+
+.menu {
+	width: 200px;
+	background: #444;
+	height: 768px;
+	border-right: 2px solid #222;
+	float: left;
+	text-align: center;
+}
+
+.content {
+	margin-left: 202px;
+	text-align: center;
+}
+
+.digit {
+	display: inline-block;
+	background: #444;
+	position: relative;
+	text-align: left;
+	margin: 0 10px;
+	overflow: hidden;
+}
+
+.digit, .dglow, .dmask, .dlight {
+	width: 137px;
+	height: 206px;
+}
+
+.dglow, .dmask, .dlight {
+	position: absolute;
+}
+
+.dglow {
+	background: url(img/glow.png) no-repeat;
+}
+
+.dmask {
+	background: url(img/mask.png) no-repeat;
+}
+
+.question {
+	background: #f55;
+}
+.answer {
+	background: #0f0;
+}
+.timer {
+	background: #55f;
+}
+.warning .timer { background: #f00; }
+
+#cQuestion {
+	padding-top: 35px;
+}
+#cAnswer {
+	padding-top: 35px;
+}
+#cTimer {
+	padding-top: 35px;
+}
+h2 {
+	color: #eee;
+	margin: 0;
+	padding: 0;
+	padding-top: 8px;
+	font: 12pt/1.5 Tahoma;
+}
+
+.logo {
+	color: #666;
+	font: bold 40pt Chalkboard, sans-serif;
+}
+
+h1 {
+	color: #777;
+	font: bold 10pt Tahoma, sans-serif;
+	margin: 12px 0 5px;
+	padding: 0;
+}
+
+button {
+	margin: 0 4px;
+	padding: 6px 0;
+	border: 1px solid #888;
+	color: #fff;
+	background: #333;
+	font: 11pt Tahoma, sans-serif;
+	cursor: pointer;
+}
+
+.full-width { width: 160px; }
+.half-width { width: 76px; }
+
+#about {
+	color: #777;
+	padding-top: 28px;
+	font: 10pt/1.6 Georgia;
+	position: absolute;
+	bottom: 20px;
+	left: 0;
+	text-align: center;
+	width: 200px;
+}
+
+#about img {
+	margin-bottom: 6px;
+	opacity: 0.5;
+	height: 80px;
+}
+
+.newrow {
+	padding-top: 8px;
+}
+
+#close {
+	color: #aaa;
+	background: #000;
+	width: 30px;
+	height: 30px;
+	text-indent: -1000px;
+	background: url(img/ex.png) no-repeat;
+	text-align: center;
+	cursor: pointer;
+	position: absolute;
+	bottom: -12px;
+	left: 10px;
+	opacity: 0.3;
+}
+
+#close:hover {
+	opacity: 1;
+}
+
+
+
+
+.sphere {
+	width: 160px;
+	height: 160px;
+	background: url(img/sphere.png) no-repeat;
+	position: absolute;
+}
+
+.sphere-num {
+	position: absolute;
+	top: 12px;
+	left: 30px;
+	width: 100px;
+	height: 144px;
+	background: url(img/numerics.png) no-repeat;
+	background-position: -500px 0;
+}
+
+.popupu {
+	position: absolute;
+	top: 384px;
+	left: 612px;
+	font: bold 40pt/70pt Verdana, Geneva, Arial, Helvetica, sans-serif;
+	color: #ccc;
+	background: #222;
+	width: 824px;
+	padding-top: 60px;
+	padding-bottom: 60px;
+	text-align: center;
+}
+
+.cimg {
+	position: absolute; top: 170px; left: 220px;
+	width: 782px;
+}
+
+.other {
+	font: bold 19pt Verdana, Geneva, Arial, Helvetica, sans-serif;
+	text-align: center;
+	color: #555;
+}
+
+.other a {
+	color: #777;
+	text-decoration: none;
+}
+
+.timer-text {
+	font: bold 60pt "Courier New";
+	position: absolute;
+	top: 5px;
+	left: 0;
+	width: 200px;
+	line-height: 200px;
+	color: #ccc;
+}
+
+.screen-wide .menu {
+	position: absolute;
+	top: 538px;
+	border-right: 0;
+	border-top: 2px solid #222;
+	height: 230px;
+	width: 1024px;
+}
+.screen-wide #logo {
+	padding-top: 28px;
+	font: 10pt/1.6 Georgia;
+	position: absolute;
+	bottom: 16px;
+	right: 0;
+	text-align: center;
+	width: 200px;
+}
+.screen-wide #logo img {
+	height: 140px;
+}
+.screen-wide .cimg {
+	left: 121px;
+	top: 60px;
+}
+.content {
+	margin: 0;
+}
+
+
+.tabs {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.tab, .active-tab {
+	display: inline-block;
+	margin: 0;
+	font: 10pt Tahoma;
+	padding: 5px 10px;
+	margin-bottom: 15px;
+	color: #ccc;
+	cursor: pointer;
+	vertical-align: top;
+}
+.active-tab {
+	padding-top: 15px;
+	margin-bottom: 0;
+	background: #222;
+	color: #fff;
+	cursor: default;
+}
+.tab:hover {
+	padding-top: 10px;
+	margin-bottom: 5px;
+	background: #333;
+}
+
+
+
+#lcd {
+	padding-top: 180px;
+}
+.screen-wide .digit {
+	margin: 0 5px;
+}
+.d-hours { background: #c6a; }
+.d-mins { background: #cc5; }
+.d-secs { background: #5ac; }
+.s-hours { background: #c86; }
+.s-mins { background: #6c8; }
+
+.ssbar {
+	padding-top: 20px;
+}
+.ssbutton {
+	display: inline-block;
+	width: 203px;
+	height: 64px;
+	background: url(img/ss-buttons.png) no-repeat;
+}
+.task {
+	padding: 15px 0 20px;
+	font: bold 20pt Verdana, Tahoma;
+	color: #666;
+}
+.task span {
+	color: #bbb;
+	cursor: pointer;
+}
+#datetime {
+	font: bold 60pt Verdana;
+	color: #ccc;
+	line-height: 140px;
+}
+
+
+.big-number {
+	width: 150px;
+	height: 270px;
+	background: url(img/numerics2.png);
+	position: absolute;
+}

@@ -1,0 +1,308 @@
+<html>
+	<head>
+		<title>IQ 180</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script type="text/javascript" src="lib/air/AIRAliases.js"></script>
+		<script type="text/javascript" src="dtjs2.js"></script>
+		<style type="text/css">
+			@import "style.css";
+		</style>
+	</head>
+	<body>
+		
+		<div class="screen">
+			<div class="menu">
+				<div id="logo">
+				</div>
+				
+				<h1>สุ่มคำถาม</h1>
+				<button class="half-width" id="random_question4">ประถม</button><button class="half-width" id="random_question5">มัธยม</button>
+				
+				<h1>คำตอบ</h1>
+				<button class="half-width" id="random_answer2">2 หลัก</button><button class="half-width" id="random_answer3">3 หลัก</button>
+				
+				<h1>จับเวลา</h1>
+				<span id="timer_a">
+					<button class="full-width" id="timer_stop">หยุดการจับเวลา</button>
+				</span>
+				<span id="timer_b">
+					<button class="half-width" id="timer_start1">30 วินาที</button><button class="half-width" id="timer_start2">45 วินาที</button>
+				</span>
+				
+				<h1>รีเซ็ต</h1>
+				<button class="full-width" id="reset_all">เริ่มใหม่</button>
+				
+			</div>
+			<div class="content">
+				<div id="cQuestion">
+					
+				</div>
+				<div id="cAnswer">
+					
+				</div>
+				<div id="cTimer">
+					
+				</div>
+			</div>
+			<div class="cimg" id="cimg">
+				<img src="splash/splash-180.png" alt="" />
+				<div class="other">
+					<a href="Timer.html">&laquo; Timer</a><b> | </b><a href="24Game.html">24-Game &raquo;</a>
+				</div>
+			</div>
+			<div id="about"></div>
+		</div>
+		
+		<script src="splash-image.js" type="text/javascript"></script>
+		<script src="utility-classes.js" type="text/javascript"></script>
+		<script type="text/javascript">
+			
+			IQ180 = function() {
+				
+				var question = [];
+				var answer = [];
+				var timer = [];
+				var separator;
+				var questionDigits = 5;
+				
+				function createSeparator() {
+					var img = document.createElement('img');
+					img.src = 'colon.png';
+					img.className = 'timer';
+					$('cTimer').appendChild (img);
+					img.style.opacity = '0';
+					separator = img;
+				}
+				
+				function init() {
+					for (var i = 0; i < 5; i ++)
+						question.push (new LCDDigit($('cQuestion'), 'question').setNumber(0, 1));
+					for (var i = 0; i < 3; i ++)
+						answer.push (new LCDDigit($('cAnswer'), 'answer').setNumber(0, 1));
+					for (var i = 0; i < 4; i ++) {
+						timer.push (new LCDDigit($('cTimer'), 'timer').setNumber(0, 1));
+						if (i == 1) {
+							createSeparator ();
+						}
+					}
+					question[0].firstChild ();
+					answer[0].firstChild ();
+					timer[0].firstChild ();
+					timer[3].highspeed ();
+					timer.container = $('cTimer');
+					initHandlers ();
+				}
+				
+				function randomize() {
+					return Math.random() - 0.5;
+				}
+				
+				function generateQuestion(current, level) {
+					if (level == 5) return current;
+					var available = {
+						'0': 1,
+						'1': 1,
+						'2': 1,
+						'3': 1,
+						'4': 1,
+						'5': 1,
+						'6': 1,
+						'7': 1,
+						'8': 1,
+						'9': 1
+					};
+					var used = {};
+					if (level == 0) available['0'] = 0;
+					for (var i = 0; i < level; i ++) {
+						var num = current[i];
+						if (used[num] === undefined)
+							used[num] = 0;
+						used[num] ++;
+						if (used[num] == 2 || num == 0)
+							available[num] = 0;
+					}
+					var availables = [];
+					for (var i in available)
+						if (available[i])
+							availables.push (i);
+					availables.sort (randomize);
+					for (var i = 0; i < availables.length; i ++) {
+						current[level] = availables[i];
+						var c = generateQuestion(current, level + 1);
+						if (c) {
+							return c;
+						}
+					}
+					return false;
+				}
+				
+				function randomQuestion() {
+					var q = generateQuestion([], 0);
+					q.sort (randomize);
+					for (var i = 0; i < 5; i ++) {
+						question[i].setNumber (questionDigits == 4 && i == 0 ? 0 : q[i], questionDigits == 4 && i == 0 ? 1 : 0);
+					}
+				}
+				
+				function randomAnswer(numDigits) {
+					var min = Math.pow(10, numDigits - 1);
+					var max = Math.pow(10, numDigits) - 1;
+					var random = min + Math.floor(Math.random() * (max - min));
+					for (var i = 0; i < 3; i ++) {
+						answer[i].setNumber (random, 3 - 1 - i);
+					}
+				}
+				
+				function runHandler(handler) {
+					handler ();
+					var interval = setInterval(handler, 50);
+					window.onmouseup = function() {
+						clearInterval (interval);
+						window.onmouseup = emptyFn;
+					};
+				}
+				
+				var timerController = function() {
+					var o = { run: start, running: 0 };
+					var t;
+					var interval;
+					var max = 30;
+					var past10 = 0;
+					var sound;
+					var playing;
+					if (window.air && air.Sound) {
+						var uReq = new air.URLRequest('countdown.mp3');
+						sound = new air.Sound();
+						sound.load (uReq);
+					}
+					function countdown() {
+						var e = (new Date().getTime() - t) / 1000;
+						var r = Math.min(max, (max + 1) - e);
+						if (r > 0) {
+							for (var i = 0; i < 4; i++) {
+								timer[i].setNumber(r, 1 - i);
+							}
+							separator.style.opacity = 0.2 + 0.8 * Math.min(1, Math.max(0, ((r + 0.999) % 1) * 8 - 2));
+						}
+						timer.container.className = (r < 11 ? 'warning' : '');
+						timer.container.style.opacity = r >= 11 ? '' : 0.01 + 0.99 * Math.abs(Math.cos(Math.pow(r / 11, 0.3) * 7 * 5 * Math.PI));
+						if (r <= 0) {
+							timer.container.style.opacity = '';
+							timer.container.className = '';						
+							stop (0, 1);
+						}
+						if (r <= 10.1 && !past10) {
+							past10 = 1;
+							if (sound) {
+								playing = sound.play();
+							}
+						}
+					}
+					function start(sec) {
+						max = sec;
+						$('timer_a').style.display = '';
+						$('timer_b').style.display = 'none';
+						past10 = 0;
+						o.running = 1;
+						o.run = stop;
+						t = new Date().getTime();
+						interval = setInterval(countdown, 10);
+						countdown ();
+					}
+					function stop(sec, is_timeout) {
+						$('timer_b').style.display = '';
+						$('timer_a').style.display = 'none';
+						o.running = 0;
+						o.run = start;
+						clearInterval (interval);
+						for (var i = 0; i < 4; i ++) {
+							timer[i].clear (i != 0);
+						}
+						if (playing && !is_timeout) {
+							playing.stop ();
+						}
+						separator.style.opacity = '1';
+					}
+					return o;
+				}();
+				
+				function resetAll() {
+					cTOGGLE (1);
+					for (var i = 0; i < 5; i ++)
+						question[i].clear ();
+					for (var i = 0; i < 3; i ++)
+						answer[i].clear ();
+					if (timerController.running)
+						timerController.run ();
+					for (var i = 0; i < 4; i ++)
+						timer[i].clear ();
+					separator.style.opacity = '0';
+				}
+				
+				function initHandlers() {
+					$('random_question4').onmousedown = function() {
+						questionDigits = 4;
+						runHandler (randomQuestion);
+						cTOGGLE (0);
+					};
+					$('random_question5').onmousedown = function() {
+						questionDigits = 5;
+						runHandler (randomQuestion);
+						cTOGGLE (0);
+					};
+					$('random_answer2').onmousedown = function() {
+						runHandler (function() {
+							randomAnswer (2);
+						});
+						cTOGGLE (0);
+					};
+					$('random_answer3').onmousedown = function() {
+						runHandler (function() {
+							randomAnswer (3);
+						});
+						cTOGGLE (0);
+					};
+					$('timer_start1').onmousedown = function() {
+						timerController.run (30);
+						cTOGGLE (0);
+					};
+					$('timer_start2').onmousedown = function() {
+						timerController.run (45);
+						cTOGGLE (0);
+					};
+					$('timer_stop').onmousedown = function() {
+						timerController.run (45);
+						cTOGGLE (0);
+					};
+					$('reset_all').onmousedown = function() {
+						resetAll ();
+					};
+					$('timer_a').style.display = 'none';
+					var lkp = 0;
+					window.onkeyup = function(e) {
+						if (e.keyCode == 32) {
+							if (new Date().getTime() - lkp < 300) {
+								lkp = 0;
+								resetAll ();
+							} else {
+								lkp = new Date().getTime();
+							}
+						}
+					};
+				}
+				
+				
+				return {
+					init: init
+				}
+				
+			}();
+
+			window.onload = function() {
+				IQ180.init ();
+			};
+			
+		</script>
+		
+	</body>
+</html>
